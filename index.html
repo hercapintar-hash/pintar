@@ -65,10 +65,10 @@
   const db = firebase.firestore();
 
   function login(){
-    auth.signInWithEmailAndPassword(email.value,password.value)
-      .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
-  }
-
+  alert("Tombol bekerja");
+  auth.signInWithEmailAndPassword(email.value,password.value)
+    .catch(err=>alert(err.message));
+}
   auth.onAuthStateChanged(user=>{
     if(user){
       authSection.style.display="none";
