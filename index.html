@@ -1,108 +1,111 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Catatan Pintar Pelajar</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f9fafb;
-      color: #111;
-      line-height: 1.6;
+    body{font-family:Arial;background:#f3f4f6;margin:0}
+    header{background:#2563eb;color:#fff;padding:40px 20px;text-align:center}
+    section{max-width:800px;margin:auto;padding:20px}
+    .box{background:#fff;padding:20px;border-radius:12px;margin-top:20px}
+    input,textarea,button{
+      width:100%;padding:12px;margin-top:10px;
+      border-radius:8px;border:1px solid #ccc
     }
-    header {
-      background: #2563eb;
-      color: #fff;
-      padding: 60px 20px;
-      text-align: center;
-    }
-    header h1 {
-      margin-bottom: 10px;
-    }
-    .btn {
-      display: inline-block;
-      margin-top: 20px;
-      background: #22c55e;
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    section {
-      max-width: 900px;
-      margin: auto;
-      padding: 40px 20px;
-    }
-    .box {
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      margin-top: 20px;
-      box-shadow: 0 5px 15px rgba(0,0,0,.05);
-    }
-    footer {
-      text-align: center;
-      padding: 30px;
-      font-size: 14px;
-      color: #666;
-    }
+    button{background:#22c55e;color:#fff;font-weight:bold}
+    .note{background:#e5e7eb;padding:10px;border-radius:8px;margin-top:10px}
   </style>
 </head>
 
 <body>
 
 <header>
-  <h1>✍️ Catatan Sekolah Jadi Rapi & Gak Pernah Hilang Lagi</h1>
-  <p>Simpan semua catatan pelajaranmu secara online dan bisa dibuka kapan saja.</p>
-  <a href="#mulai" class="btn">Mulai Gratis</a>
+  <h1>📘 Catatan Pintar Pelajar</h1>
+  <p>Simpan catatan sekolahmu dengan aman</p>
 </header>
 
-<section>
-  <h2>😵 Pernah Ngerasain Ini?</h2>
-  <div class="box">
-    <ul>
-      <li>Catatan hilang pas mau ulangan</li>
-      <li>Materi nyebar di WhatsApp</li>
-      <li>Ganti HP, catatan ikut hilang</li>
-    </ul>
-  </div>
+<section id="auth" class="box">
+  <h3>Login / Daftar</h3>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Masuk / Daftar</button>
 </section>
 
-<section>
-  <h2>✨ Solusinya: Catatan Pintar Pelajar</h2>
-  <div class="box">
-    Catatan Pintar Pelajar membantu kamu menyimpan semua catatan sekolah
-    secara rapi, aman, dan mudah dicari.
-  </div>
+<section id="app" class="box" style="display:none">
+  <h3>Tulis Catatan</h3>
+  <textarea id="note" placeholder="Tulis catatan pelajaran..."></textarea>
+  <button onclick="saveNote()">Simpan Catatan</button>
+
+  <h3>Catatan Kamu</h3>
+  <div id="notes"></div>
+
+  <button onclick="logout()">Logout</button>
 </section>
 
-<section>
-  <h2>📚 Fitur Utama</h2>
-  <div class="box">
-    <ul>
-      <li>Catatan per mata pelajaran</li>
-      <li>Edit & hapus kapan saja</li>
-      <li>Akses lewat HP</li>
-      <li>Pencarian cepat</li>
-      <li>Data aman tersimpan online</li>
-    </ul>
-  </div>
-</section>
+<script>
+  // 🔥 GANTI DENGAN CONFIG FIREBASE KAMU
+  const firebaseConfig = {
+    apiKey: "API_KEY_KAMU",
+    authDomain: "PROJECT_ID.firebaseapp.com",
+    projectId: "PROJECT_ID"
+  };
 
-<section id="mulai">
-  <h2>🚀 Mulai Sekarang</h2>
-  <div class="box" style="text-align:center">
-    <p>Gratis. Tidak perlu kartu kredit.</p>
-    <a href="#" class="btn">Buat Catatan Gratis</a>
-  </div>
-</section>
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-<footer>
-  © 2026 Catatan Pintar Pelajar
-</footer>
+  function login(){
+    auth.signInWithEmailAndPassword(email.value,password.value)
+      .catch(()=>auth.createUserWithEmailAndPassword(email.value,password.value));
+  }
+
+  auth.onAuthStateChanged(user=>{
+    if(user){
+      authSection.style.display="none";
+      app.style.display="block";
+      loadNotes();
+    }
+  });
+
+  const authSection = document.getElementById("auth");
+
+  function saveNote(){
+    const user = auth.currentUser;
+    db.collection("notes").add({
+      uid:user.uid,
+      text:note.value,
+      time:Date.now()
+    });
+    note.value="";
+    loadNotes();
+  }
+
+  function loadNotes(){
+    notes.innerHTML="";
+    const user = auth.currentUser;
+    db.collection("notes")
+      .where("uid","==",user.uid)
+      .orderBy("time","desc")
+      .get()
+      .then(snap=>{
+        snap.forEach(doc=>{
+          notes.innerHTML+=`<div class="note">${doc.data().text}</div>`;
+        });
+      });
+  }
+
+  function logout(){
+    auth.signOut();
+    location.reload();
+  }
+</script>
 
 </body>
 </html>
