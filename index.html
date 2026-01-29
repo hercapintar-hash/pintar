@@ -43,9 +43,11 @@
   <textarea id="note" placeholder="Tulis catatan pelajaran..."></textarea>
   <button onclick="saveNote()">Simpan Catatan</button>
 
-  <h3>Catatan Kamu</h3>
-  <div id="notes"></div>
-
+<h3>Catatan Kamu</h3>
+<p id="limitMsg" style="color:red;display:none">
+  ⚠️ Batas gratis 20 catatan tercapai. Upgrade ke Premium.
+</p>
+<div id="notes"></div>
   <button onclick="logout()">Logout</button>
 </section>
 
@@ -76,15 +78,28 @@
 
   const authSection = document.getElementById("auth");
 
-  function saveNote(){
-    const user = auth.currentUser;
-    db.collection("notes").add({
-      uid:user.uid,
-      text:note.value,
-      time:Date.now()
+function saveNote(){
+  const user = auth.currentUser;
+
+  db.collection("notes")
+    .where("uid","==",user.uid)
+    .get()
+    .then(snapshot=>{
+      if(snapshot.size >= 20){
+        document.getElementById("limitMsg").style.display = "block";
+        return;
+      }
+
+      db.collection("notes").add({
+        uid:user.uid,
+        text:note.value,
+        time:Date.now()
+      }).then(()=>{
+        note.value="";
+        loadNotes();
+      });
     });
-    note.value="";
-    loadNotes();
+}
   }
 
   function loadNotes(){
@@ -95,6 +110,7 @@
       .orderBy("time","desc")
       .get()
       .then(snap=>{
+       document.getElementById("limitMsg").style.display = "none";
         snap.forEach(doc=>{
           notes.innerHTML+=`<div class="note">${doc.data().text}</div>`;
         });
