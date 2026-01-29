@@ -64,56 +64,71 @@
   const auth = firebase.auth();
   const db = firebase.firestore();
 
+  // ✅ DEFINISIKAN SEMUA ELEMENT DULU
+  const authSection = document.getElementById("auth");
+  const appSection = document.getElementById("app");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const noteInput = document.getElementById("note");
+  const notesDiv = document.getElementById("notes");
+  const limitMsg = document.getElementById("limitMsg");
+
   function login(){
-  alert("Tombol bekerja");
-  auth.signInWithEmailAndPassword(email.value,password.value)
-    .catch(err=>alert(err.message));
-}
+    auth.signInWithEmailAndPassword(
+      emailInput.value,
+      passwordInput.value
+    ).catch(()=>{
+      auth.createUserWithEmailAndPassword(
+        emailInput.value,
+        passwordInput.value
+      );
+    });
+  }
+
   auth.onAuthStateChanged(user=>{
     if(user){
-      authSection.style.display="none";
-      app.style.display="block";
+      authSection.style.display = "none";
+      appSection.style.display = "block";
       loadNotes();
     }
   });
 
-  const authSection = document.getElementById("auth");
+  function saveNote(){
+    const user = auth.currentUser;
 
-function saveNote(){
-  const user = auth.currentUser;
+    db.collection("notes")
+      .where("uid","==",user.uid)
+      .get()
+      .then(snapshot=>{
+        if(snapshot.size >= 20){
+          limitMsg.style.display = "block";
+          return;
+        }
 
-  db.collection("notes")
-    .where("uid","==",user.uid)
-    .get()
-    .then(snapshot=>{
-      if(snapshot.size >= 20){
-        document.getElementById("limitMsg").style.display = "block";
-        return;
-      }
-
-      db.collection("notes").add({
-        uid:user.uid,
-        text:note.value,
-        time:Date.now()
-      }).then(()=>{
-        note.value="";
-        loadNotes();
+        db.collection("notes").add({
+          uid: user.uid,
+          text: noteInput.value,
+          time: Date.now()
+        }).then(()=>{
+          noteInput.value = "";
+          loadNotes();
+        });
       });
-    });
-}
   }
 
   function loadNotes(){
-    notes.innerHTML="";
+    notesDiv.innerHTML = "";
+    limitMsg.style.display = "none";
+
     const user = auth.currentUser;
     db.collection("notes")
       .where("uid","==",user.uid)
       .orderBy("time","desc")
       .get()
-      .then(snap=>{
-       document.getElementById("limitMsg").style.display = "none";
-        snap.forEach(doc=>{
-          notes.innerHTML+=`<div class="note">${doc.data().text}</div>`;
+      .then(snapshot=>{
+        snapshot.forEach(doc=>{
+          notesDiv.innerHTML +=
+            `<div class="note">${doc.data().text}</div>`;
         });
       });
   }
@@ -122,6 +137,7 @@ function saveNote(){
     auth.signOut();
     location.reload();
   }
+</script>
 </script>
 
 </body>
